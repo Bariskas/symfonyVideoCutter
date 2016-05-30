@@ -1,7 +1,7 @@
 <?php
     namespace AppBundle\Entity;
 
-    class VideoLoader
+    class VideoFormEntity
     {
 
         protected $video;
