@@ -10,8 +10,8 @@
     use Symfony\Component\Form\Extension\Core\Type\FileType;
     use Symfony\Component\Form\Extension\Core\Type\TextType;
     use Symfony\Component\Form\Extension\Core\Type\RangeType;
-    use AppBundle\Entity\VideoFormEntity;
     use AppBundle\Entity\UserVideoEntity;
+    use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
     use AppBundle\Utils\VideoUtilit;
     use FFMpeg;
 
@@ -27,9 +27,9 @@
         }
 
         /**
-         * @Route("/load-new-video", name="newVideo")
+         * @Route("/load-new-video-beta", name="newVideoBeta")
          */
-        public function loadNewVideoAction(Request $request)
+        public function loadNewVideoBetaAction(Request $request)
         {
             $videoFormEntity = new VideoFormEntity();
 
@@ -64,6 +64,41 @@
             return $this->render('cutter/videoLoad.html.twig', [
                 'form' => $videoForm->createView(),
             ]);
+        }
+
+        /**
+         * @Route("/load-new-video", name="newVideo")
+         * @Method({"GET","POST"})
+         */
+        public function loadNewVideoAction(Request $request)
+        {
+            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                $video = $request->files->get('video');
+                $videoEntity = new UserVideoEntity($video);
+                $videoUtilit = new VideoUtilit($videoEntity);
+                $videoEntity->setDuration($videoUtilit->calculateDuration());
+
+                $doctrineManager = $this->getDoctrine()->getManager();
+                $doctrineManager->persist($videoEntity);
+                $doctrineManager->flush();
+
+                $videoUtilit->saveVideo();
+                $framePath = $videoUtilit->createFrame();
+
+                $data = [
+                    'filename' => $videoEntity->getName(),
+                    'size' => $videoEntity->getSize(),
+                    'framePath' => $framePath,
+                    'duration' => $videoEntity->getDuration(),
+                    'id' => $videoEntity->getId(),
+                ];
+
+                return $this->render('cutter/videoLoaded.html.twig', $data);
+            }
+            else
+            {
+                return $this->render('cutter/videoLoad.html.twig');
+            }
         }
 
         /**

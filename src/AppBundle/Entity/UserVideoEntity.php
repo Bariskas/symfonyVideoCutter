@@ -1,7 +1,6 @@
 <?php
 // src/AppBundle/Entity/Product.php
     namespace AppBundle\Entity;
-    use FFMpeg;
     use Doctrine\ORM\Mapping as ORM;
     use Symfony\Component\HttpFoundation\File\UploadedFile;
 
@@ -34,15 +33,16 @@
          */
         private $duration;
 
+        /**
+         * @var UploadedFile
+         */
         private $video;
-        private $dir;
 
         public function __construct(UploadedFile $video)
         {
             $this->video = $video;
             $this->name = $this->video->getClientOriginalName();
             $this->size = $this->video->getClientSize();
-            $this->duration = $this->calcDuration();
         }
 
         /**
@@ -127,32 +127,15 @@
             return $this->duration;
         }
 
+        public function getVideo()
+        {
+            return $this->video;
+        }
+
+
         public function getFramePath()
         {
             return self::VIDEO_DIR . "$this->id/" . 'frame.jpeg';
         }
 
-        public function saveVideo()
-        {
-            $this->dir = self::VIDEO_DIR . "$this->id/";
-            $this->video->move($this->dir, $this->name);
-        }
-
-        public function createFrame($time = 0)
-        {
-            $framePath =  self::VIDEO_DIR . "$this->id/" . (($time === 0) ? 'frame' : $time) . '.jpeg';
-            $time = ($time === 0) ? round($this->duration / 2) : $time;
-            $ffmpeg = FFMpeg\FFMpeg::create();
-            $video = $ffmpeg->open(self::VIDEO_DIR . "$this->id/" . $this->name);
-            $video
-                ->frame(FFMpeg\Coordinate\TimeCode::fromSeconds($time))
-                ->save($framePath);
-            return $framePath;
-        }
-
-        private function calcDuration()
-        {
-            $ffprobe = FFMpeg\FFProbe::create();
-            return $ffprobe->format($this->video->getRealPath())->get('duration');
-        }
     }

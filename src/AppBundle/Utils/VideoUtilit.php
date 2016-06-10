@@ -1,6 +1,7 @@
 <?php
     namespace AppBundle\Utils;
     use FFMpeg;
+    use AppBundle\Entity\UserVideoEntity;
 
     class VideoUtilit
     {
@@ -14,20 +15,14 @@
         private $videoPath = '';
         private $duration = 0;
 
-        public function __construct($file)
-        {
-            $this->file = $file;
-            $this->initParameters();
-        }
+        /**
+         * @var UserVideoEntity
+         */
+        private $videoEntity;
 
-        public function getFileName()
+        public function __construct(UserVideoEntity $videoEntity)
         {
-            return $this->fileName;
-        }
-
-        public function saveVideo($id)
-        {
-            $this->file->move(self::VIDEO_DIR . 'id/', $this->fileName);
+            $this->videoEntity = $videoEntity;
         }
 
         public function getFrame($time = 0)
@@ -49,27 +44,27 @@
             return $framePath;
         }
 
-        public function getDuration()
+        public function saveVideo()
         {
-            return $this->duration;
+            $dir = self::VIDEO_DIR . $this->videoEntity->getId() . "/";
+            $this->videoEntity->getVideo()->move($dir, $this->videoEntity->getName());
         }
 
-        public function getSize()
+        public function createFrame($time = 0)
         {
-            return $this->file->getClientSize();
+            $framePath =  self::VIDEO_DIR . $this->videoEntity->getId() . "/" . (($time === 0) ? 'frame' : $time) . '.jpeg';
+            $time = ($time === 0) ? round($this->videoEntity->getDuration() / 2) : $time;
+            $ffmpeg = FFMpeg\FFMpeg::create();
+            $video = $ffmpeg->open(self::VIDEO_DIR . $this->videoEntity->getId() . "/" . $this->videoEntity->getName());
+            $video
+                ->frame(FFMpeg\Coordinate\TimeCode::fromSeconds($time))
+                ->save($framePath);
+            return $framePath;
         }
 
-        private function calcDuration()
+        public function calculateDuration()
         {
             $ffprobe = FFMpeg\FFProbe::create();
-            echo $this->videoPath;
-            return $ffprobe->format($this->videoPath)->get('duration');
-        }
-
-        private function initParameters()
-        {
-            $this->fileName = $this->file->getClientOriginalName();
-            $this->videoPath = self::VIDEO_DIR . $this->fileName;
-            $this->duration = $this->calcDuration();
+            return $ffprobe->format($this->videoEntity->getVideo()->getRealPath())->get('duration');
         }
     }
