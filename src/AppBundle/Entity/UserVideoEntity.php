@@ -3,6 +3,7 @@
     namespace AppBundle\Entity;
     use Doctrine\ORM\Mapping as ORM;
     use Symfony\Component\HttpFoundation\File\UploadedFile;
+    use AppBundle\Utils\Consts;
 
     /**
      * @ORM\Entity
@@ -135,7 +136,7 @@
 
         public function getFramePath()
         {
-            return self::VIDEO_DIR . "$this->id/" . 'frame.jpeg';
+            return Consts::VIDEO_DIR . "$this->id/" . 'frame.jpeg';
         }
 
     }
