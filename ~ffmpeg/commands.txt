@@ -1,0 +1,2 @@
+ffmpeg -y -i "C:\science\work\symfonyVideoCutter\web/uploads/videos/101/Blacksmith_pi2.mp4" -ss 3 -t 173 -vf scale=600:600 -c:a copy "C:\science\work\symfonyVideoCutter\web/uploads/videos/101/new-Blacksmith_pi2.mp4
+ffmpeg -i Blacksmith.mp4 -crf 20 -preset ultrafast -vf scale=720:720,format=yuv420p out.mp4

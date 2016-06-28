@@ -52,13 +52,27 @@
             }
         }
 
-        public function clip($from, $to)
+        public function resize($newWidth, $newHeight)
+        {
+            $pathToVideo = $this->videoDir . $this->videoEntity->getId() . "/";
+            $fullOldPath = $_SERVER["DOCUMENT_ROOT"] . '/' . $pathToVideo . 'clipped-' . $this->videoEntity->getName();
+            $fullNewPath = $_SERVER["DOCUMENT_ROOT"] . '/' .$pathToVideo . 'new-' . $this->videoEntity->getName();
+
+            $command = "ffmpeg -y -i " . "\"" . $fullOldPath . "\"" . " -vf scale=" . $newWidth . ":" . $newHeight . " -c:a copy " . "\"" . $fullNewPath . "\"";
+            echo $command.'asd2';
+            $output = '';
+            $status = '';
+            exec($command, $output, $status);
+        }
+
+        public function processVideo($from, $to, $newWidth, $newHeight)
         {
             $pathToVideo = $this->videoDir . $this->videoEntity->getId() . "/";
             $fullOldPath = $_SERVER["DOCUMENT_ROOT"] . '/' . $pathToVideo . $this->videoEntity->getName();
             $fullNewPath = $_SERVER["DOCUMENT_ROOT"] . '/' .$pathToVideo . 'clipped-' . $this->videoEntity->getName();
 
-            $command = "ffmpeg -y -i " . "\"" . $fullOldPath . "\"" . " -ss " . $from . " -t " . ($to - $from) . " -c copy " . "\"" . $fullNewPath . "\"";
+
+            $command = "ffmpeg -y -i " . "\"" . $fullOldPath . "\"" . " -ss " . $from . " -t " . ($to - $from) . " -vf scale=" . $newWidth . ":" . $newHeight . " -c:a copy " . "\"" . $fullNewPath . "\"";
             $output = '';
             $status = '';
             exec($command, $output, $status);
@@ -68,5 +82,27 @@
         {
             $ffprobe = FFMpeg\FFProbe::create();
             return $ffprobe->format($this->videoEntity->getVideo()->getRealPath())->get('duration');
+        }
+
+        public function calculateHeight()
+        {
+            $ffprobe = FFMpeg\FFProbe::create();
+            return $ffprobe
+                ->streams($this->videoEntity->getVideo()->getRealPath()) // extracts streams informations
+                ->videos()                      // filters video streams
+                ->first()                       // returns the first video stream
+                ->getDimensions()
+                ->getHeight();
+        }
+
+        public function calculateWidth()
+        {
+            $ffprobe = FFMpeg\FFProbe::create();
+            return $ffprobe
+                ->streams($this->videoEntity->getVideo()->getRealPath()) // extracts streams informations
+                ->videos()                      // filters video streams
+                ->first()                       // returns the first video stream
+                ->getDimensions()
+                ->getWidth();
         }
     }

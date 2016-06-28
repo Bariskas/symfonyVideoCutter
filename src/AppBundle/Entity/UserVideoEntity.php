@@ -35,9 +35,18 @@
         private $duration;
 
         /**
+         * @ORM\Column(type="integer")
+         */
+        private $height;
+        /**
+         * @ORM\Column(type="integer")
+         */
+        private $width;
+        /**
          * @var UploadedFile
          */
         private $video;
+
 
         public function __construct(UploadedFile $video)
         {
@@ -128,6 +137,7 @@
             return $this->duration;
         }
 
+
         public function getVideo()
         {
             return $this->video;
@@ -139,4 +149,52 @@
             return Consts::VIDEO_DIR . "$this->id/" . 'frame.jpeg';
         }
 
+    
+    /**
+     * Set height
+     *
+     * @param integer $height
+     *
+     * @return UserVideoEntity
+     */
+    public function setHeight($height)
+    {
+        $this->height = $height;
+
+        return $this;
     }
+
+    /**
+     * Get height
+     *
+     * @return integer
+     */
+    public function getHeight()
+    {
+        return $this->height;
+    }
+
+    /**
+     * Set width
+     *
+     * @param integer $width
+     *
+     * @return UserVideoEntity
+     */
+    public function setWidth($width)
+    {
+        $this->width = $width;
+
+        return $this;
+    }
+
+    /**
+     * Get width
+     *
+     * @return integer
+     */
+    public function getWidth()
+    {
+        return $this->width;
+    }
+}
