@@ -1,108 +1,94 @@
 <?php
     namespace AppBundle\Utils;
     use FFMpeg;
-    use AppBundle\Entity\UserVideoEntity;
 
     class VideoUtils
     {
-        const FRAMES_COUNT = 5;
         const JPEG_EXT = '.jpeg';
-        /**
-         * @var UserVideoEntity
-         */
-        private $videoEntity;
-        private $videoDir = "";
+        private $ffprobe;
+        private $ffmpeg;
 
-        public function __construct(UserVideoEntity $videoEntity = null, $videoDir)
+        public function __construct()
         {
-            $this->videoEntity = $videoEntity;
-            $this->videoDir = $videoDir;
+            $this->ffmpeg = FFMpeg\FFMpeg::create();
+            $this->ffprobe = FFMpeg\FFProbe::create();
         }
 
-        public function saveVideo()
+        public function createFrames($framesCount, $videoFullPath, $framesRootPartPath, $videoDuration = 0)
         {
-            $dir = $this->videoDir . $this->videoEntity->getId() . "/";
-            $this->videoEntity->getVideo()->move($dir, $this->videoEntity->getName());
-        }
-
-        public function createFrame($time = 0)
-        {
-            $framePath =  $this->videoDir . $this->videoEntity->getId() . "/" . (($time === 0) ? 'frame' : $time) . self::JPEG_EXT;
-            $time = ($time === 0) ? round($this->videoEntity->getDuration() / 2) : $time;
-            $ffmpeg = FFMpeg\FFMpeg::create();
-            $video = $ffmpeg->open($this->videoDir . $this->videoEntity->getId() . "/" . $this->videoEntity->getName());
-            $video->frame(FFMpeg\Coordinate\TimeCode::fromSeconds($time))
-                ->save($framePath);
-            return $framePath;
-        }
-
-        public function createFrames()
-        {
-            $framesPath =  $this->videoDir . $this->videoEntity->getId() . "/frame";
-            $duration = $this->videoEntity->getDuration();
-            $ffmpeg = FFMpeg\FFMpeg::create();
-
-            $video = $ffmpeg->open($this->videoDir . $this->videoEntity->getId() . "/" . $this->videoEntity->getName());
-            $step = $duration / self::FRAMES_COUNT;
-            for ($i = 0; $i < self::FRAMES_COUNT; $i++)
+            if ($videoDuration == 0)
             {
-                $path = $framesPath . $i . self::JPEG_EXT;
-                $video->frame(FFMpeg\Coordinate\TimeCode::fromSeconds($i*$step))
-                    ->save($path);
+                $videoDuration = $this->getVideoDuration($videoFullPath);
+            }
+
+            $video = $this->ffmpeg->open($videoFullPath);
+            $cutFrameInterval = $videoDuration / $framesCount;
+            for ($i = 0; $i < $framesCount; $i++)
+            {
+                $frameSavePath = $framesRootPartPath . $i . self::JPEG_EXT;
+                $video->frame(FFMpeg\Coordinate\TimeCode::fromSeconds($i * $cutFrameInterval))
+                    ->save($frameSavePath);
             }
         }
 
-        public function resize($newWidth, $newHeight)
+        public function resizeVideo($fullOldPath, $fullNewPath, $newWidth, $newHeight)
         {
-            $pathToVideo = $this->videoDir . $this->videoEntity->getId() . "/";
-            $fullOldPath = $_SERVER["DOCUMENT_ROOT"] . '/' . $pathToVideo . 'clipped-' . $this->videoEntity->getName();
-            $fullNewPath = $_SERVER["DOCUMENT_ROOT"] . '/' .$pathToVideo . 'new-' . $this->videoEntity->getName();
+            $video = $this->ffmpeg->open($fullOldPath);
+            $video->filters()
+                ->resize(new FFMpeg\Coordinate\Dimension($newWidth, $newHeight))
+                ->synchronize();
+            $format = new FFMpeg\Format\Video\X264();
+            $format->setAudioCodec('libmp3lame');
+            $video->save($format, $fullNewPath);
+        }
 
-            $command = "ffmpeg -y -i " . "\"" . $fullOldPath . "\"" . " -vf scale=" . $newWidth . ":" . $newHeight . " -c:a copy " . "\"" . $fullNewPath . "\"";
-            echo $command.'asd2';
+        public function cutVideo($fullOldPath, $fullNewPath, $timeFrom, $timeTo)
+        {
+            $command = "ffmpeg -y -i " . "\"" . $fullOldPath . "\"" . " -ss " . $timeFrom . " -t " . ($timeTo - $timeFrom) . " -c copy " . "\"" . $fullNewPath . "\"";
             $output = '';
-            $status = '';
-            exec($command, $output, $status);
+            $executeStatus = '';
+            exec($command, $output, $executeStatus);
+            if ($executeStatus) {
+                return false;
+            }
+            return true;
         }
 
-        public function processVideo($from, $to, $newWidth, $newHeight)
+        public function getVideoDuration($videoPath)
         {
-            $pathToVideo = $this->videoDir . $this->videoEntity->getId() . "/";
-            $fullOldPath = $_SERVER["DOCUMENT_ROOT"] . '/' . $pathToVideo . $this->videoEntity->getName();
-            $fullNewPath = $_SERVER["DOCUMENT_ROOT"] . '/' .$pathToVideo . 'clipped-' . $this->videoEntity->getName();
-
-
-            $command = "ffmpeg -y -i " . "\"" . $fullOldPath . "\"" . " -ss " . $from . " -t " . ($to - $from) . " -vf scale=" . $newWidth . ":" . $newHeight . " -c:a copy " . "\"" . $fullNewPath . "\"";
-            $output = '';
-            $status = '';
-            exec($command, $output, $status);
+            return $this->ffprobe->format($videoPath)->get('duration');
         }
 
-        public function calculateDuration()
+        /**
+         * @param string $videoPath
+         * @return int
+         */
+        public function getVideoHeight($videoPath)
         {
-            $ffprobe = FFMpeg\FFProbe::create();
-            return $ffprobe->format($this->videoEntity->getVideo()->getRealPath())->get('duration');
-        }
-
-        public function calculateHeight()
-        {
-            $ffprobe = FFMpeg\FFProbe::create();
-            return $ffprobe
-                ->streams($this->videoEntity->getVideo()->getRealPath()) // extracts streams informations
-                ->videos()                      // filters video streams
-                ->first()                       // returns the first video stream
-                ->getDimensions()
+            return $this->getDimensionFromVideo($videoPath)
                 ->getHeight();
         }
 
-        public function calculateWidth()
+        /**
+         * @param string $videoPath
+         * @return int
+         */
+        public function getVideoWidth($videoPath)
         {
-            $ffprobe = FFMpeg\FFProbe::create();
-            return $ffprobe
-                ->streams($this->videoEntity->getVideo()->getRealPath()) // extracts streams informations
-                ->videos()                      // filters video streams
-                ->first()                       // returns the first video stream
-                ->getDimensions()
+            return $this->getDimensionFromVideo($videoPath)
                 ->getWidth();
         }
+
+        /**
+         * @param string $videoPath
+         * @return FFMpeg\Coordinate\Dimension
+         */
+        private function getDimensionFromVideo($videoPath)
+        {
+            return $this->ffprobe->streams($videoPath)
+                ->videos()
+                ->first()
+                ->getDimensions();
+        }
+
     }

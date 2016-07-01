@@ -2,16 +2,18 @@
 
     namespace AppBundle\Controller;
 
-    use AppBundle\Utils\FormatUtils;
-    use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
-    use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
+    use /** @noinspection PhpUnusedAliasInspection */
+        Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
+    use /** @noinspection PhpUnusedAliasInspection */
+        Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
+    use Symfony\Component\HttpFoundation\File\UploadedFile;
     use Symfony\Component\HttpFoundation\Response;
-    use Symfony\Component\HttpFoundation\JsonResponse;
     use Symfony\Bundle\FrameworkBundle\Controller\Controller;
     use Symfony\Component\HttpFoundation\Request;
     use AppBundle\Entity\UserVideoEntity;
-    use Symfony\Component\HttpFoundation\BinaryFileResponse;
-    use AppBundle\Utils\Consts;
+    use AppBundle\Classes\FilePathGenerator;
+    use AppBundle\Classes\FormatUtils;
+    use AppBundle\Consts;
     use AppBundle\Utils\VideoUtils;
     use FFMpeg;
 
@@ -20,99 +22,153 @@
         /**
          * @Route("/", name="newVideo")
          * @Method({"GET","POST"})
+         * @param Request $request
+         * @return Response
          */
         public function loadNewVideoAction(Request $request)
         {
-
-            if ($request->getMethod() === 'POST') {
-                $videoDir = $this->container->getParameter('video_dir');
+            if ($request->getMethod() === Consts\HTTPRequest::TYPE_POST)
+            {
                 $video = $request->files->get('video');
-                $videoEntity = new UserVideoEntity($video);
-                $videoUtils = new VideoUtils($videoEntity, $this->container->getParameter('video_dir'));
-                $videoEntity->setDuration($videoUtils->calculateDuration());
-                $videoEntity->setHeight($videoUtils->calculateHeight());
-                $videoEntity->setWidth($videoUtils->calculateWidth());
+                if (!$video)
+                {
+                    return $this->render('cutter/videoLoad.html.twig');
+                }
 
-                $doctrineManager = $this->getDoctrine()->getManager();
-                $doctrineManager->persist($videoEntity);
-                $doctrineManager->flush();
+                $videoPath = $video->getRealPath();
+                $videoInformationEntity = new UserVideoEntity($video);
+                $videoUtils = new VideoUtils();
 
-                $videoUtils->saveVideo();
-                $videoUtils->createFrames();
+                $this->initVideoEntityParams($videoUtils, $videoInformationEntity, $videoPath);
+                $this->saveVideoInformationToDB($videoInformationEntity);
+                $videoId = $videoInformationEntity->getId();
+                $this->saveVideo($video, $videoId);
+                $this->createFramesForVideo($videoInformationEntity, $videoUtils);
 
                 $data = [
-                    'filename' => $videoEntity->getName(),
-                    'size' => FormatUtils::formatBytes($videoEntity->getSize()),
-                    'videoPath' => $videoDir . '/' .  $videoEntity->getId() . '/' . $videoEntity->getName(),
-                    'duration' => round($videoEntity->getDuration(), 3),
-                    'height' => $videoEntity->getHeight(),
-                    'width' => $videoEntity->getWidth(),
-                    'id' => $videoEntity->getId(),
+                    'filename' => $videoInformationEntity->getName(),
+                    'size' => FormatUtils::formatBytes($videoInformationEntity->getSize()),
+                    'videoPath' => FilePathGenerator::createRefVideoPath($videoId, $videoInformationEntity->getName()),
+                    'duration' => FormatUtils::formatTime($videoInformationEntity->getDuration()),
+                    'height' => $videoInformationEntity->getHeight(),
+                    'width' => $videoInformationEntity->getWidth(),
+                    'id' => $videoInformationEntity->getId(),
                 ];
 
                 $responseData['html'] = $this->renderView('cutter/block/videoInformation.html.twig', $data);
-                $responseData['duration'] = floor($videoEntity->getDuration());
-                return new Response(json_encode($responseData), 200, array('Content-Type'=>'application/json'));
+                $responseData['duration'] = floor($videoInformationEntity->getDuration());
+                return new Response(json_encode($responseData), Consts\HTTPRequest::STATUS_OK, array('Content-Type'=>'application/json'));
             }
-            else
-            {
-                return $this->render('cutter/videoLoad.html.twig');
-            }
+            return $this->render('cutter/videoLoad.html.twig');
         }
 
         /**
          * @Route("/cut-video", name="cutVideo")
+         * @param Request $request
+         * @return Response
          */
         public function cutAction(Request $request)
         {
             $id = $request->get('videoId');
-            $from = $request->request->get('from');
-            $to = $request->request->get('to');
-            $newWidth = $request->request->get('newWidth');
-            $newHeight = $request->request->get('newHeight');
+            $timeFrom = $request->get('from');
+            $timeTo = $request->get('to');
+            $newWidth = $request->get('newWidth', 0);
+            $newHeight = $request->get('newHeight', 0);
             $videoEntity = $this->getDoctrine()->getRepository('AppBundle:UserVideoEntity')
                 ->find($id);
+            $videoId = $videoEntity->getId();
+            $videoName = $videoEntity->getName();
+            $fullOldPath = FilePathGenerator::createFullVideoPath($videoId, $videoName);
+            $fullNewPath = FilePathGenerator::createFullVideoPath($videoId, $videoName, 'cutted-');
 
             $videoUtil = new VideoUtils($videoEntity, $this->container->getParameter('video_dir'));
-            $videoUtil->processVideo($from, $to, $newWidth, $newHeight);
-            $responseData = ['link' => '/upload/' . $videoEntity->getId() . '/' . 'clipped-' . $videoEntity->getName()];
-            return new Response(json_encode($responseData), 200, array('Content-Type'=>'application/json'));
+            $videoUtil->cutVideo($fullOldPath, $fullNewPath, $timeFrom, $timeTo);
+            $prefix = 'cutted-';
+
+            if ($newWidth != 0 && $newHeight != 0)
+            {
+                $prefix = 'new-';
+                $fullOldPath = $fullNewPath;
+                $fullNewPath = FilePathGenerator::createFullVideoPath($videoId, $videoName, 'new-');
+                $videoUtil->resizeVideo($fullOldPath, $fullNewPath, $newWidth, $newHeight);
+            }
+
+            $responseData = ['link' => '/upload/' . $videoEntity->getId() . '/' . $prefix . $videoName];
+
+            return new Response(json_encode($responseData), Consts\HTTPRequest::STATUS_OK, array('Content-Type'=>'application/json'));
         }
 
         /**
-         * @Route("/upload/{id}/{name}", name="downloadVideo")
+         * @Route("/upload/{videoId}/{name}", name="downloadVideo")
+         * @param $videoId
+         * @param $name
+         * @return Response
          */
-        public function downloadAction($id, $name)
+        public function downloadAction($videoId, $name)
         {
-            $file = Consts::VIDEO_DIR . $id . '/' . $name;
-            $content = file_get_contents($file);
+            $filePath = FilePathGenerator::createRefVideoPath($videoId, $name);
+            $content = file_get_contents($filePath);
 
-            $response = new Response();
-
-            $response->headers->set('Content-Type', 'application/octet-stream');
-            $response->headers->set('Content-Disposition', 'attachment;filename="' . $name);
-
+            $response = $this->createOctetStreamResponse($name);
             $response->setContent($content);
             return $response;
-            //$response = new BinaryFileResponse($file);
-            //return $response;
         }
 
         /**
-         * @Route("/test", name="testVideo")
+         * @param VideoUtils $videoUtils
+         * @param UserVideoEntity $videoEntity
+         * @param string $videoPath path to video from entity
          */
-        public function testAction()
+        private function initVideoEntityParams(VideoUtils $videoUtils, UserVideoEntity $videoEntity, $videoPath)
         {
-            $ffprobe = FFMpeg\FFProbe::create();
-            $dimension = $ffprobe ->streams('C:\science\Blacksmith.mp4') // extracts streams informations
-                ->videos()                      // filters video streams
-                ->first()                       // returns the first video stream
-                ->getDimensions();
-            var_dump($dimension);
-            var_dump($dimension->getWidth());
-            return new Response('asd');
-            //$response = new BinaryFileResponse($file);
-            //return $response;
+            $videoEntity->setDuration($videoUtils->getVideoDuration($videoPath));
+            $videoEntity->setWidth($videoUtils->getVideoWidth($videoPath));
+            $videoEntity->setHeight($videoUtils->getVideoHeight($videoPath));
+        }
+
+        /**
+         * @param $videoInformationEntity
+         */
+        private function saveVideoInformationToDB($videoInformationEntity)
+        {
+            $doctrineManager = $this->getDoctrine()->getManager();
+            $doctrineManager->persist($videoInformationEntity);
+            $doctrineManager->flush();
+        }
+
+        /**
+         * @param UploadedFile $video
+         * @param $id
+         */
+        private function saveVideo(UploadedFile $video, $id)
+        {
+            $saveDir = FilePathGenerator::createVideoDirPath($id);
+            $video->move($saveDir, $video->getClientOriginalName());
+        }
+
+        /**
+         * @param UserVideoEntity $videoInformationEntity
+         * @param VideoUtils $videoUtils
+         */
+        private function createFramesForVideo(UserVideoEntity $videoInformationEntity, VideoUtils $videoUtils)
+        {
+            $videoDuration =  $videoInformationEntity->getDuration();
+            $videoId = $videoInformationEntity->getId();
+            $framesRootPartPath = FilePathGenerator::createFramesRootPartPath($videoId);
+            $videoRefPath = FilePathGenerator::createRefVideoPath($videoId, $videoInformationEntity->getName());
+            $videoUtils->createFrames(Consts\Consts::FRAMES_COUNT, $videoRefPath, $framesRootPartPath, $videoDuration);
+        }
+
+        /**
+         * @param $fileName
+         * @return Response
+         */
+        private function createOctetStreamResponse($fileName)
+        {
+            $response = new Response();
+            $response->headers->set('Content-Type', 'application/octet-stream');
+            $response->headers->set('Content-Disposition', 'attachment;filename="' . $fileName);
+            return $response;
         }
 
     }

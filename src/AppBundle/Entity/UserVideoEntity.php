@@ -138,63 +138,51 @@
         }
 
 
-        public function getVideo()
+        /**
+         * Set height
+         *
+         * @param integer $height
+         *
+         * @return UserVideoEntity
+         */
+        public function setHeight($height)
         {
-            return $this->video;
+            $this->height = $height;
+
+            return $this;
         }
 
-
-        public function getFramePath()
+        /**
+         * Get height
+         *
+         * @return integer
+         */
+        public function getHeight()
         {
-            return Consts::VIDEO_DIR . "$this->id/" . 'frame.jpeg';
+            return $this->height;
         }
 
-    
-    /**
-     * Set height
-     *
-     * @param integer $height
-     *
-     * @return UserVideoEntity
-     */
-    public function setHeight($height)
-    {
-        $this->height = $height;
+        /**
+         * Set width
+         *
+         * @param integer $width
+         *
+         * @return UserVideoEntity
+         */
+        public function setWidth($width)
+        {
+            $this->width = $width;
 
-        return $this;
+            return $this;
+        }
+
+        /**
+         * Get width
+         *
+         * @return integer
+         */
+        public function getWidth()
+        {
+            return $this->width;
+        }
     }
-
-    /**
-     * Get height
-     *
-     * @return integer
-     */
-    public function getHeight()
-    {
-        return $this->height;
-    }
-
-    /**
-     * Set width
-     *
-     * @param integer $width
-     *
-     * @return UserVideoEntity
-     */
-    public function setWidth($width)
-    {
-        $this->width = $width;
-
-        return $this;
-    }
-
-    /**
-     * Get width
-     *
-     * @return integer
-     */
-    public function getWidth()
-    {
-        return $this->width;
-    }
-}
