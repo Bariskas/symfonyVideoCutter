@@ -1,0 +1,51 @@
+{# app/Resources/views/cutter/index.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block stylesheets %}
+    <link href="{{ asset('bundles/appbundle/css/bootstrap.css') }}" rel="stylesheet">
+    <link href="{{ asset('bundles/appbundle/css/main.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block javascripts %}
+    <script src="{{ asset('bundles/appbundle/js/jquery-3.0.0.min.js') }}"></script>
+    <script src="{{ asset('bundles/appbundle/js/ion.rangeSlider.min.js') }}"></script>
+{% endblock %}
+
+{% block body %}
+    <header>
+        {% block header %}
+            <div class="jumbotron">
+                <div class="container">
+                    <h1>Video Cutter</h1>
+                </div>
+            </div>
+        {% endblock %}
+    </header>
+    <div class="container main_container">
+        <div class="row main_row">
+            <div class="col-md-3 sidebar well">
+                {%  block leftSideBar %}
+                    <ul class="nav nav-pills nav-stacked">
+                        <li class="active"><a href="/">Главная</a></li>
+                        <li><a href="/video-list">Посмотреть загруженные видео</a></li>
+                        <li><a href="/load-new-video">Загрузить новое видео</a></li>
+                    </ul>
+                {% endblock %}
+            </div>
+            <div class="col-xs-12 well">
+                {% block main %}
+                    <div class="jumbotron">
+                        <h1>Привет, юзер!</h1>
+                        <p>Тут ты можешь загрузить своё видео и что-нибудь с ним потом сделать</p>
+                        <p><a href="/load-new-video" class="btn btn-primary btn-lg" role="button">Загрузить видео</a></p>
+                    </div>
+                {% endblock %}
+            </div>
+        </div>
+    </div>
+    <footer>
+        {% block footer %}
+            footer
+        {% endblock %}
+    </footer>
+{% endblock %}

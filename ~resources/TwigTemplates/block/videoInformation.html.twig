@@ -1,0 +1,60 @@
+<div class="content form-horizontal">
+    <div class="form-group">
+        <label class="col-xs-2 control-label">Имя файла</label>
+        <div class="col-xs-2">
+            <input type="text" class="form-control" value="{{ filename }}" readonly>
+        </div>
+        <label class="col-xs-2 control-label">Размер видео</label>
+        <div class="col-xs-2">
+            <input type="text" class="form-control" value="{{ size }}" readonly>
+        </div>
+        <label class="col-xs-2 control-label">Длительность</label>
+        <div class="col-xs-2">
+            <input type="text" class="duration form-control" value="{{ duration }}" readonly />
+        </div>
+    </div>
+    {% if id == 0 %}
+        <a href="/cut/{{ id }}"> Вырезать кадры </a>
+
+    {% endif %}
+    <video controls>
+        <source src={{ videoPath }} type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+    <div class="frames_row">
+        {% for i in 0..4 %}
+            <img class="frame_row_item" src="uploads/videos/{{ id }}/frame{{ i }}.jpeg" readonly/>
+        {% endfor %}
+        <input type="text" id="slider" name="slider" value="0" />
+    </div>
+
+    <form id="cutForm" action="/cut-video" method="post" enctype="multipart/form-data">
+        <input name="from" class="cut_range" id="from" value="0"/>
+        <input name="to" class="cut_range" id="to" value="0"/>
+        <input id="videoId" name="videoId" value="{{ id }}" readonly/>
+    </form>
+
+    <div class="form-group sizes_input_group">
+        <label class="col-xs-2 control-label">Старая ширина</label>
+        <div class="col-xs-4">
+            <input type="text" class="form-control" value="{{ width }}" readonly />
+        </div>
+        <label class="col-xs-2 control-label">Старая высота</label>
+        <div class="col-xs-4">
+            <input type="text" class="form-control" value="{{ height }}" readonly />
+        </div>
+
+        <label class="col-xs-2 control-label">Новая ширина</label>
+        <div class="col-xs-4">
+            <input type="number" id='newWidth' class="form-control" value="0" />
+        </div>
+        <label class="col-xs-2 control-label">Новая высота</label>
+        <div class="col-xs-4">
+            <input type="number" id='newHeight' class="form-control" value="0" />
+        </div>
+    </div>
+
+    <input class="clip_button btn" type="button" value="Вырезать"/>
+    <img class="preloader" hidden src="preloader2.gif">
+    <a class="download_link"><label class="clip_button btn download_btn">Загрузить файл<label/></a>
+</div>

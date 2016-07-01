@@ -1,0 +1,171 @@
+header
+{
+    display: none;
+    background: #FFFFEE;
+    width: 100%;
+}
+
+.main
+{
+    background: #AAAAAA;
+}
+
+.container
+{
+    min-width: 600px;
+}
+
+.container .row
+{
+    display: flex;
+}
+
+.main.panel
+{
+    width: 810px;
+}
+
+
+.sidebar
+{
+    display: none;
+    background: #ffffdd;
+}
+
+footer
+{
+    display: none;
+    background: #A5C261;
+    width: 100%;
+}
+
+.frame
+{
+    width: 50%;
+}
+
+.frame.full
+{
+    width: 100%;
+}
+
+.progress
+{
+    display: none;
+    position: relative;
+    margin: 20px auto;
+    width: 300px;
+    height: 20px;
+    border: 1px solid #ddd;
+    padding: 1px;
+    border-radius: 3px;;
+}
+
+.bar
+{
+    background-color: #B4F5B4;
+    width: 0%;
+    height: 20px;
+    border-radius: 3px;
+}
+
+.percent
+{
+    position: absolute;
+    display: inline-block;
+    top: 3px;
+    left: 48%;
+}
+
+.frames_row
+{
+    position: relative;
+    margin: 20px auto;
+    width: 100%;
+}
+
+.frame_row_item
+{
+    width: 20%;
+    float: left;
+}
+
+#slider
+{
+    position: absolute;
+    top: -45px;
+}
+
+.irs.js-irs-0
+{
+    clear: both;
+    top: -39px;
+    margin: 0 -10px;
+}
+
+.cut_range
+{
+    display: none;
+}
+
+.load_form_container
+{
+    text-align: center;
+}
+
+.container input[type="file"]
+{
+    display: none;
+}
+
+
+.btn
+{
+    background-color: #fff;
+    margin: 10px 0;
+}
+
+.btn:hover
+{
+    background-color: #eee;
+}
+
+#videoId
+{
+    display: none;
+}
+
+body div.container .form-control
+{
+    cursor: auto;
+}
+
+video
+{
+    width: 50%;
+}
+
+.download_btn
+{
+    display: none;
+}
+
+.main_container
+{
+    position: absolute;
+    display: table;
+    height: 100%;
+    left: 0;
+    right: 0;
+}
+
+.container .row.main_row
+{
+    display: table-cell;
+    vertical-align: middle;
+}
+
+.sizes_input_group
+{
+    display: none;
+}

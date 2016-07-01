@@ -1,0 +1,23 @@
+{# app/Resources/views/cutter/index.html.twig #}
+{% extends 'cutter/index.html.twig' %}
+
+{% form_theme form 'bootstrap_3_layout.html.twig' %}
+
+{%  block leftSideBar %}
+    <ul class="nav nav-pills nav-stacked">
+        <li><a href="/">Главная</a></li>
+        <li><a href="/video-list">Посмотреть что есть</a></li>
+        <li><a href="/load-new-video">Загрузить новое видео</a></li>
+    </ul>
+{% endblock %}
+
+{% block main %}
+    <div class="content">
+        {{ form_start(form) }}
+        {{ form_widget(form) }}
+        {{ form_end(form) }}
+        {% if framePath != '' %}
+            <img class="frame full" src={{ framePath }} />
+        {% endif %}
+    </div>
+{% endblock %}

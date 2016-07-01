@@ -1,0 +1,23 @@
+{# app/Resources/views/cutter/videoLoaded.html.twig #}
+{% extends 'cutter/index.html.twig' %}
+
+{%  block leftSideBar %}
+        <ul class="nav nav-pills nav-stacked">
+            <li><a href="/">Главная</a></li>
+            <li><a href="/video-list">Посмотреть что есть</a></li>
+            <li><a href="/load-new-video">Загрузить новое видео</a></li>
+        </ul>
+
+{% endblock %}
+
+{% block main %}
+    <div class="content">
+        {{ filename }} <br/>
+        {{ size/(1024*1024) }} MB <br/>
+        {{ duration }} (Секунд) <br/>
+        {% if id != 0 %}
+            <a href="/cut/{{ id }}"> Вырезать кадры </a>
+        {% endif %}
+        <img class="frame" src={{ framePath }} />
+    </div>
+{% endblock %}

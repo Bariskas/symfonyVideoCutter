@@ -1,0 +1,39 @@
+{# app/Resources/views/cutter/index.html.twig #}
+{% extends 'cutter/index.html.twig' %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link href="{{ asset('bundles/appbundle/css/ion.rangeSlider.css') }}" rel="stylesheet">
+    <link href="{{ asset('bundles/appbundle/css/ion.rangeSlider.skinHTML5.css') }}" rel="stylesheet">
+    <link href="{{ asset('bundles/appbundle/css/normalize.css') }}"
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="{{ asset('bundles/appbundle/js/jquery.form.js') }}"></script>
+    <script src="{{ asset('bundles/appbundle/js/fileUpload.js') }}"></script>
+{% endblock %}
+
+{%  block leftSideBar %}
+    <ul class="nav nav-pills nav-stacked">
+        <li><a href="/">Главная</a></li>
+        <li><a href="/video-list">Посмотреть что есть</a></li>
+        <li class="active"><a href="/load-new-video">Загрузить новое видео</a></li>
+    </ul>
+{% endblock %}
+
+{% block main %}
+    <div class="load_form_container">
+        <form id="loadForm" action="/" method="post" enctype="multipart/form-data">
+            <input class="btn load_file_button" value="Выбрать файл" accept="video/*">
+            <input class="form-control load_file_name" type="text" value="" readonly>
+            <input class="input_file" type="file" name="video"><br>
+            <input class="btn" type="submit" value="Загрузить">
+        </form>
+        <div class="progress">
+            <div class="bar"></div >
+            <div class="percent">0%</div >
+        </div>
+    </div>
+    <div id="status"></div>
+{% endblock %}
